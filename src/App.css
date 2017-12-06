@@ -37,6 +37,8 @@ button{
 }
 .dealerCards {
   display: flex;
+  justify-content: center;
+  align-items: center;
   height: 50%;
   background: green;
 }
@@ -62,6 +64,9 @@ button{
   border-right: 2px solid black;
   display: flex;
   flex-direction: column;
+}
+.red{
+  color: red;
 }
 
 @keyframes App-logo-spin {
