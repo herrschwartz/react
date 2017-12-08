@@ -24,16 +24,33 @@ state = {
       deck: deck,
     })
   }
+
   componentDidUpdate(){
+    const {playerTotal, dealerCards, dealerTotal} = this.state
     console.log(this.state);
+
+    if(playerTotal > 21){
+      this.resetBoard()
+    }
+
     if(this.state.specialRoundStartDraw === true){
       this.setState({
         position: this.state.position+1,
-        dealerCards: [...this.state.dealerCards, this.state.deck[this.state.position]],
-        dealerTotal: this.state.dealerTotal + this.state.deck[this.state.position].power,
+        dealerCards: [...dealerCards, this.state.deck[this.state.position]],
+        dealerTotal: dealerTotal + this.state.deck[this.state.position].power,
         specialRoundStartDraw: false,
       })
     }
+  }
+  resetBoard(){
+    this.setState({
+        playerCards: [],
+        dealerCards: [],
+        currentBet: 0,
+        roundStart: true,
+        playerTotal: 0,
+        dealerTotal: 0,
+      })
   }
 
   hit(num, whom){
@@ -68,7 +85,16 @@ state = {
   }
 
   surrender(){
-
+    const {currentBet, moneyTotal} = this.state
+    this.setState({
+        playerCards: [],
+        dealerCards: [],
+        currentBet: 0,
+        roundStart: true,
+        playerTotal: 0,
+        dealerTotal: 0,
+        moneyTotal: moneyTotal+(Math.floor(currentBet/2))
+      })
   }
 
   shuffle(d){
@@ -93,8 +119,12 @@ state = {
   }
 
   render() {
-    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards} = this.state
+    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards, playerTotal} = this.state
     const moneyFormatted = moneyTotal.toLocaleString()
+    let bustMsg = ""
+    if(playerTotal > 21){
+      bustMsg = "Bust! (" + playerTotal + ")"
+    }
     return (
       <div className="App">
           <div className="board">
@@ -122,6 +152,7 @@ state = {
               )
              )
              }
+             <h1>{bustMsg}</h1>
             </div>
           </div>
       </div>

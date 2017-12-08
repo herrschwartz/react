@@ -2,22 +2,16 @@ import React, { Component } from 'react';
 
 class BetForm extends Component{
 state = {
-  error: false,
   errToMuch: false,
   betAmt: 0,
 }
 placeBet(e){
-  if(this.refs.bet.value < 5) {
-    this.setState({
-      error: true
-    })
-  } else if (this.refs.bet.value > this.props.monTotal) {
+  if (this.refs.bet.value > this.props.monTotal) {
     this.setState({
       errToMuch: true
     })
   } else {
     this.setState({
-      error: false,
       errToMuch: false,
       betAmt: this.refs.bet.value
     },
@@ -30,9 +24,6 @@ placeBet(e){
 }
   render(){
     let errMsg = ""
-    if(this.state.error === true){
-      errMsg = "Bet must be $5 or more"
-    }
     if(this.state.errToMuch === true){
       errMsg = "Bet excedes funds"
     }
