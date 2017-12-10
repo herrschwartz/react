@@ -6,7 +6,7 @@ import BetForm from './Components/BetForm'
 
 class App extends Component {
 state = {
-    // deck: deck,
+    deck: deck,
     position: 0,
     playerTotal: 0,
     dealerTotal: 0,
@@ -27,10 +27,30 @@ state = {
 
   componentDidUpdate(){
     const {playerTotal, dealerCards, dealerTotal} = this.state
+    let playerCards = this.state.playerCards
+    let newTotal = 0
     console.log(this.state);
 
-    if(playerTotal > 21){
-      this.resetBoard()
+    if(playerTotal > 21){ //works for aces, but really should be cleaned up
+      for (var i=0; i<playerCards.length; i++){
+        if(playerCards[i].card === "A" && playerCards[i].power===11){
+          playerCards[i].power = 1
+          break
+        }
+      }
+      for(var j=0; j<playerCards.length; j++){
+        newTotal += playerCards[j].power
+      }
+      console.log(playerCards)
+      console.log(newTotal)
+      if (newTotal > 21) {
+        this.resetBoard()
+      } else {
+        this.setState({
+          playerTotal: newTotal,
+          playerCards: playerCards,
+        })
+      }
     }
 
     if(this.state.specialRoundStartDraw === true){
@@ -52,6 +72,7 @@ state = {
         dealerTotal: 0,
       })
   }
+
 
   hit(num, whom){
     const {deck, position, playerTotal, dealerTotal, playerCards, dealerCards} = this.state
