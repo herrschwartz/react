@@ -15,6 +15,8 @@ state = {
     moneyTotal: 100,
     currentBet: 0,
     roundStart: true,
+    roundEnd: false,
+    endMsg: "",
     specialRoundStartDraw: false, //So async updates don't mess up dealer draw at the start of rounds
   }
   componentDidMount(){
@@ -26,10 +28,20 @@ state = {
   }
 
   componentDidUpdate(){
-    const {playerTotal, dealerCards, dealerTotal} = this.state
+    const {playerTotal, dealerCards, dealerTotal, currentBet, endMsg, moneyTotal} = this.state
     let playerCards = this.state.playerCards
     let newTotal = 0
     console.log(this.state);
+
+    if(playerTotal === 21){
+      this.setState({
+        roundEnd: true,
+        playerTotal: 0,
+        dealerTotal: 0,
+        endMsg: "Blackjack",
+        moneyTotal: moneyTotal+(Math.floor(currentBet*2.333)),
+      })
+    }
 
     if(playerTotal > 21){ //works for aces, but really should be cleaned up
       for (var i=0; i<playerCards.length; i++){
@@ -41,10 +53,13 @@ state = {
       for(var j=0; j<playerCards.length; j++){
         newTotal += playerCards[j].power
       }
-      console.log(playerCards)
-      console.log(newTotal)
       if (newTotal > 21) {
-        this.resetBoard()
+        this.setState({
+          roundEnd: true,
+          playerTotal: 0,
+          dealerTotal: 0,
+          endMsg: "Bust: (" + playerTotal + ")"
+        })
       } else {
         this.setState({
           playerTotal: newTotal,
@@ -68,8 +83,10 @@ state = {
         dealerCards: [],
         currentBet: 0,
         roundStart: true,
+        roundEnd: false,
         playerTotal: 0,
         dealerTotal: 0,
+        endMsg: ""
       })
   }
 
@@ -140,7 +157,7 @@ state = {
   }
 
   render() {
-    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards, playerTotal} = this.state
+    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards, playerTotal, roundEnd, endMsg} = this.state
     const moneyFormatted = moneyTotal.toLocaleString()
     let bustMsg = ""
     if(playerTotal > 21){
@@ -173,7 +190,10 @@ state = {
               )
              )
              }
-             <h1>{bustMsg}</h1>
+             {roundEnd ? (<div className="rndEnd">
+                           <h3>{endMsg}</h3>
+                           <button className="btn btn-primary rnd-btn" onClick={() => this.resetBoard()}>Next Round</button>
+                         </div>) : null }
             </div>
           </div>
       </div>
