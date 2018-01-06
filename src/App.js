@@ -17,6 +17,7 @@ state = {
     roundStart: true,
     roundEnd: false,
     endMsg: "",
+    dealerFlag: false, //if true, it is the dealer's turn to play
     specialRoundStartDraw: false, //So async updates don't mess up dealer draw at the start of rounds
   }
   componentDidMount(){
@@ -28,31 +29,25 @@ state = {
   }
 
   componentDidUpdate(){
-    const {playerTotal, dealerCards, dealerTotal, currentBet, endMsg, moneyTotal} = this.state
+    const {playerTotal, dealerCards, dealerTotal, currentBet, moneyTotal, dealerFlag} = this.state
     let playerCards = this.state.playerCards
     let newTotal = 0
     console.log(this.state);
+
 
     if(playerTotal === 21){
       this.setState({
         roundEnd: true,
         playerTotal: 0,
         dealerTotal: 0,
+        dealerFlag: false,
         endMsg: "Blackjack",
-        moneyTotal: moneyTotal+(Math.floor(currentBet*2.333)),
+        moneyTotal: moneyTotal+(Math.floor(currentBet*2.5)),
       })
     }
 
     if(playerTotal > 21){ //works for aces, but really should be cleaned up
-      for (var i=0; i<playerCards.length; i++){
-        if(playerCards[i].card === "A" && playerCards[i].power===11){
-          playerCards[i].power = 1
-          break
-        }
-      }
-      for(var j=0; j<playerCards.length; j++){
-        newTotal += playerCards[j].power
-      }
+      newTotal = this.correctForAces(playerCards)
       if (newTotal > 21) {
         this.setState({
           roundEnd: true,
@@ -68,15 +63,25 @@ state = {
       }
     }
 
+    if(dealerFlag === true){
+      this.dealer()
+    }
+
     if(this.state.specialRoundStartDraw === true){
+      let position = this.state.position
+      if (position>51){
+        this.shuffle(this.state.deck)
+        position = 0
+      }
       this.setState({
-        position: this.state.position+1,
-        dealerCards: [...dealerCards, this.state.deck[this.state.position]],
-        dealerTotal: dealerTotal + this.state.deck[this.state.position].power,
+        position: position+1,
+        dealerCards: [...dealerCards, this.state.deck[position]],
+        dealerTotal: dealerTotal + this.state.deck[position].power,
         specialRoundStartDraw: false,
       })
     }
   }
+
   resetBoard(){
     this.setState({
         playerCards: [],
@@ -92,10 +97,16 @@ state = {
 
 
   hit(num, whom){
-    const {deck, position, playerTotal, dealerTotal, playerCards, dealerCards} = this.state
+    const {deck, playerTotal, dealerTotal, playerCards, dealerCards} = this.state
+    let position = this.state.position
     let cards = []
     let power = 0
+
     for(var i=0; i<num; i++) {
+      if(position+i > 51){
+        this.shuffle(deck)
+        position=0
+      }
       cards.push(deck[position+i])
       power += deck[position+i].power
     }
@@ -114,12 +125,74 @@ state = {
   }
 
   }
-  stay(){
+  dealer(){
+    const { dealerCards, moneyTotal, currentBet, playerTotal, dealerTotal} = this.state
+    let realTotal = 0
+    dealerTotal > 21 ? realTotal = this.correctForAces(dealerCards) : realTotal = dealerTotal
+    if (realTotal < 17 ){
+      this.hit(1, "dealer")
+    } else if (realTotal < 21) {
+      if(playerTotal < realTotal){
+        this.setState({
+          roundEnd: true,
+          playerTotal: 0,
+          dealerTotal: 0,
+          dealerFlag: false,
+          endMsg: "You Lose: Dealer ("+realTotal+"), You ("+playerTotal+")"
+        })
+      } else if (realTotal === playerTotal) {
+        this.setState({
+          roundEnd: true,
+          playerTotal: 0,
+          dealerTotal: 0,
+          dealerFlag: false,
+          moneyTotal: moneyTotal + parseInt(currentBet),
+          endMsg: "Push: ("+realTotal+")"
+        })
+      } else {
+        this.setState({
+          roundEnd: true,
+          playerTotal: 0,
+          dealerTotal: 0,
+          dealerFlag: false,
+          moneyTotal: moneyTotal + 2*currentBet,
+          endMsg: "You Win: Dealer ("+realTotal+"), You ("+playerTotal+")"
+        })
+      }
 
+    } else if (realTotal === 21) {
+      this.setState({
+        roundEnd: true,
+        playerTotal: 0,
+        dealerTotal: 0,
+        dealerFlag: false,
+        endMsg: "You Lose: Dealer 21"
+      })
+    } else { //dealer bust
+      this.setState({
+        roundEnd: true,
+        playerTotal: 0,
+        dealerTotal: 0,
+        dealerFlag: false,
+        moneyTotal: moneyTotal + 2*currentBet,
+        endMsg: "Dealer Bust: ("+ realTotal+ ")"
+      })
+    }
+  }
+  stay(){
+    this.setState({
+      dealerFlag: true
+    })
   }
 
   double(){
-
+    const {currentBet, moneyTotal} = this.state
+    this.setState({
+      dealerFlag: true,
+      currentBet: 2*currentBet,
+      moneyTotal: moneyTotal-currentBet
+    })
+    this.hit(1, "player")
   }
 
   surrender(){
@@ -134,6 +207,19 @@ state = {
         moneyTotal: moneyTotal+(Math.floor(currentBet/2))
       })
   }
+  correctForAces(cards){
+    let newTotal = 0
+    for (var i=0; i<cards.length; i++){
+      if(cards[i].card === "A" && cards[i].power===11){
+        cards[i].power = 1
+        break
+      }
+    }
+    for(var j=0; j<cards.length; j++){
+      newTotal += cards[j].power
+  }
+  return newTotal
+}
 
   shuffle(d){
      for(var i = 0; i<1000; i++){
@@ -157,11 +243,11 @@ state = {
   }
 
   render() {
-    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards, playerTotal, roundEnd, endMsg} = this.state
+    const {playerCards, moneyTotal, roundStart, currentBet, dealerCards, roundEnd, endMsg} = this.state
     const moneyFormatted = moneyTotal.toLocaleString()
-    let bustMsg = ""
-    if(playerTotal > 21){
-      bustMsg = "Bust! (" + playerTotal + ")"
+    let cantDouble = false
+    if(2*currentBet> moneyTotal){
+      cantDouble = true
     }
     return (
       <div className="App">
@@ -176,10 +262,10 @@ state = {
             </div>
             <div className="myCards" id="pcards">
              <div className="options">
-              <button className="btn btn-primary" onClick={() => this.hit(1, "player")} disabled={roundStart} >Hit</button>
-              <button className="btn btn-primary" onClick={() => this.stay()} disabled={roundStart}>Stay</button>
-              <button className="btn btn-primary" onClick={() => this.double()} disabled={roundStart}>Double</button>
-              <button className="btn btn-primary" onClick={() => this.surrender()} disabled={roundStart}>Surrender</button>
+              <button className="btn btn-primary" onClick={() => this.hit(1, "player")} disabled={roundStart || roundEnd} >Hit</button>
+              <button className="btn btn-primary" onClick={() => this.stay()} disabled={roundStart || roundEnd}>Stay</button>
+              <button className="btn btn-primary" onClick={() => this.double()} disabled={roundStart || cantDouble|| roundEnd}>Double</button>
+              <button className="btn btn-primary" onClick={() => this.surrender()} disabled={roundStart || roundEnd}>Surrender</button>
               <h3>${moneyFormatted}</h3>
               <h4>Bet: {currentBet}</h4>
              </div>
