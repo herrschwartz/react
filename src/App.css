@@ -41,7 +41,7 @@ button {
   justify-content: center;
   align-items: center;
   height: 50%;
-  background: green;
+  border-bottom: 2px solid black;
 }
 .card {
   border: 1px solid black;

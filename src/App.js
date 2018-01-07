@@ -22,17 +22,16 @@ state = {
   }
   componentDidMount(){
     this.shuffle(deck)
-    console.log(deck)
     this.setState({
       deck: deck,
     })
   }
 
   componentDidUpdate(){
-    const {playerTotal, dealerCards, dealerTotal, currentBet, moneyTotal, dealerFlag} = this.state
+    const {playerTotal, currentBet, moneyTotal, dealerFlag} = this.state
     let playerCards = this.state.playerCards
     let newTotal = 0
-    console.log(this.state);
+    //console.log(this.state);
 
 
     if(playerTotal === 21){
@@ -68,17 +67,7 @@ state = {
     }
 
     if(this.state.specialRoundStartDraw === true){
-      let position = this.state.position
-      if (position>51){
-        this.shuffle(this.state.deck)
-        position = 0
-      }
-      this.setState({
-        position: position+1,
-        dealerCards: [...dealerCards, this.state.deck[position]],
-        dealerTotal: dealerTotal + this.state.deck[position].power,
-        specialRoundStartDraw: false,
-      })
+      this.hit(1, "dealer")
     }
   }
 
@@ -121,6 +110,7 @@ state = {
       position: (position+num),
       dealerTotal: dealerTotal+power,
       dealerCards: [...dealerCards, ...cards],
+      specialRoundStartDraw: false,
     })
   }
 
@@ -146,7 +136,7 @@ state = {
           playerTotal: 0,
           dealerTotal: 0,
           dealerFlag: false,
-          moneyTotal: moneyTotal + parseInt(currentBet),
+          moneyTotal: moneyTotal + parseInt(currentBet,10),
           endMsg: "Push: ("+realTotal+")"
         })
       } else {
@@ -221,6 +211,24 @@ state = {
   return newTotal
 }
 
+getColor(moneyTotal){
+  let color = "#ffffff"
+  let gcolorsBP = [110, 130, 160, 200, 250, 300, 360, 420, 600, 800]
+  let gcolors = ["#fffbe5", "#fff7cc", "#fff3b2", "#ffef99", "#ffeb7f", "#ffe766", "#ffe34c", "#ffdf32", "#ffdb19", "#ffd700"]
+  let bcolors = ["#000000", "#140707", "#280f0f", "#3c1616", "#501e1e", "#642626", "#782d2d", "#8c3535", "#a03c3c",  "#c94c4c"]
+  if(moneyTotal < 100){
+    color = bcolors[Math.floor(moneyTotal/10)]
+  }
+  if(moneyTotal>110) {
+    for(var i=0; i<gcolorsBP.length; i++){
+      if(moneyTotal>gcolorsBP[i]){
+          color = gcolors[i]
+      }
+    }
+  }
+  return color
+}
+
   shuffle(d){
      for(var i = 0; i<1000; i++){
         var a = Math.floor(Math.random() * 52)
@@ -228,6 +236,11 @@ state = {
         var tmp = d[a]
         d[a] = d[b]
         d[b] = tmp
+      }
+      for(var j = 0; j<d.length; j++){ //reset the power of aces to 11 on shuffle
+        if(d[j].card === "A"){
+          d[j].power = 11
+        }
       }
       console.log(d)
   }
@@ -249,10 +262,17 @@ state = {
     if(2*currentBet> moneyTotal){
       cantDouble = true
     }
+
+    let dealerBack = {
+      background: this.getColor(moneyTotal + 1*currentBet),
+      WebkitTransition: 'all 1.5s ease-in-out',
+      transition: 'all 1.5s ease-in-out',
+    }
+
     return (
       <div className="App">
           <div className="board">
-            <div className="dealerCards">
+            <div className="dealerCards" style={dealerBack} >
             {
              dealerCards.map((e) => (
                <Card card={e.card} suit={e.suit}/>
